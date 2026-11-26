@@ -1,20 +1,35 @@
 import { mkdirSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
 
-const entry =
-  "Sorry, the council's collecting my broken fridge today and they fine you if nobody's home to sign for it.";
+const OUT_PATH = "/output/entry.txt";
+const MAX_CHARS = 140;
+const MAX_WORDS = 20;
 
-// Fail loudly instead of shipping an entry the gate would refuse:
-// 1-140 characters, at most 20 words, a single line of plain text.
-if (
-  entry.length < 1 ||
-  entry.length > 140 ||
-  entry.trim().split(/\s+/).length > 20 ||
-  entry.includes("\n")
-) {
-  throw new Error("entry breaks the bounty gate (length, word count or lines)");
+const SETUP = "Council cut the water to my block";
+const CAUSE = "for emergency pipe repairs";
+const STUCK = "I'm on bucket duty till noon";
+
+function countWords(line: string): number {
+  return line.split(/\s+/).filter((part) => part.length > 0).length;
 }
 
-const outDir = process.env.MAKEFUN_OUTPUT_DIR ?? "/output";
-mkdirSync(outDir, { recursive: true });
-writeFileSync(join(outDir, "entry.txt"), entry, "utf8");
+function buildExcuse(): string {
+  const raw = `${SETUP} ${CAUSE}, ${STUCK}`;
+  return raw.replace(/\s+/g, " ").trim();
+}
+
+function main(): void {
+  const line = buildExcuse();
+  const words = countWords(line);
+  if (line.length < 1 || line.length > MAX_CHARS) {
+    throw new Error(`entry is ${line.length} chars, must be 1-${MAX_CHARS}`);
+  }
+  if (words > MAX_WORDS) {
+    throw new Error(`entry is ${words} words, must be at most ${MAX_WORDS}`);
+  }
+  mkdirSync("/output", { recursive: true });
+  writeFileSync(OUT_PATH, line, "utf8");
+  console.log(`wrote ${line.length} chars (${words} words) to ${OUT_PATH}`);
+  console.log(line);
+}
+
+main();
